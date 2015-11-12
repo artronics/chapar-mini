@@ -7,5 +7,5 @@ public interface MessageToPacketConvertor
     int START_BYTE = 122;
     int STOP_BYTE = 126;
 
-    List<List<Integer>> generatePackets(List receivedData);
+    List<List<Integer>> generatePackets(List<Integer> receivedData);
 }

@@ -48,15 +48,15 @@ public class Chapar implements Runnable
     @Subscribe
     public void recievePacketHandler(MessageReceivedEvent event)
     {
-        //there is no need for conversion with this implementation
-        //TODO create msgToPacket for general use
-//        List<List<Integer>> messages = convertor.generatePackets(event.getPacket());
-//
-//        for (List<Integer> msg : messages) {
-//            receivedBuffer.add(msg);
-//        }
+        List<List<Integer>> messages = convertor.generatePackets(event.getPacket());
 
-        receivedBuffer.add(event.getPacket());
+        for (List<Integer> msg : messages) {
+            receivedBuffer.add(msg);
+            for (Integer byt : msg) {
+                System.out.print(byt + " ");
+            }
+            System.out.println();
+        }
     }
 
     @Override

@@ -152,9 +152,7 @@ public class SerialPortConnection implements Connection, SerialPortEventListener
                 for (int i = 0; i < length; i++) {
                     //convert signed value to unsigned
                     intBuff.add(buff[i] & 0xFF);
-//                    System.out.print(intBuff.get(i) + " ");
                 }
-//                System.out.println();
 
                 MessageReceivedEvent event = new MessageReceivedEvent(intBuff);
                 Event.CHAPAR_BUS.post(event);

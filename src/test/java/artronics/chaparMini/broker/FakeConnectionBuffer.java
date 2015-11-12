@@ -49,15 +49,15 @@ public class FakeConnectionBuffer
         //for first, second, and fullhalf i changed the index range. for others
         //see removeStartStop inside MessageToPacketConvertorImplTest method
         Integer[] giberishArr = Arrays.copyOfRange(streamOfBytes, 0, 4);
-        Integer[] firstOneArr = Arrays.copyOfRange(streamOfBytes, 5, 7);
-        Integer[] secondOneArr = Arrays.copyOfRange(streamOfBytes, 13, 15);
+        Integer[] firstOneArr = Arrays.copyOfRange(streamOfBytes, 4, 8);
+        Integer[] secondOneArr = Arrays.copyOfRange(streamOfBytes, 12, 16);
         Integer[] twoPacketsArr = Arrays.copyOfRange(streamOfBytes, 4, 16);
         Integer[] withGibberishArr = Arrays.copyOfRange(streamOfBytes, 0, 16);
         Integer[] withStartStopArr = Arrays.copyOfRange(streamOfBytes, 16, 21);
         Integer[] withStrStp_packet = Arrays.copyOfRange(streamOfBytes, 16, 25);
         Integer[] firstHalfArr = Arrays.copyOfRange(streamOfBytes, 25, 29);
         Integer[] secondHalfArr = Arrays.copyOfRange(streamOfBytes, 29, 33);
-        Integer[] fullHalfArr = Arrays.copyOfRange(streamOfBytes, 26, 32);
+        Integer[] fullHalfArr = Arrays.copyOfRange(streamOfBytes, 25, 33);
 
         //These are the with start and stop
         Integer[] firstOneBuff = Arrays.copyOfRange(streamOfBytes, 4, 8);
