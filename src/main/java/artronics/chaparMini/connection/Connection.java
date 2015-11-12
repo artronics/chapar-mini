@@ -1,14 +1,15 @@
 package artronics.chaparMini.connection;
 
+import java.net.ConnectException;
 import java.util.Hashtable;
 
 public interface Connection
 {
     int TIMEOUT = 2000;
 
-    void stablishConnection();
+    void stablishConnection() throws ConnectException;
 
-    void open();
+    void open() throws ConnectException;
 
     void close();
 

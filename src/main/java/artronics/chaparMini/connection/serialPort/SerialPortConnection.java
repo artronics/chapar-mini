@@ -1,9 +1,10 @@
 package artronics.chaparMini.connection.serialPort;
 
-import artronics.chapar.core.events.Event;
-import artronics.chapar.core.events.MessageReceivedEvent;
-import artronics.chapar.device.Connection;
-import artronics.chapar.device.ConnectionStatusType;
+
+import artronics.chaparMini.connection.Connection;
+import artronics.chaparMini.connection.ConnectionStatusType;
+import artronics.chaparMini.events.Event;
+import artronics.chaparMini.events.MessageReceivedEvent;
 import gnu.io.*;
 
 import java.io.IOException;
@@ -15,13 +16,15 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.TooManyListenersException;
 
-import static artronics.chapar.device.ConnectionStatusType.*;
+import static artronics.chaparMini.connection.ConnectionStatusType.*;
 
 public class SerialPortConnection implements Connection, SerialPortEventListener
 {
-    private final Hashtable<String, CommPortIdentifier> ports = new Hashtable<>();
+    private static final String COM_PORT = "/dev/tty.usbserial-AH00WG8Y";
+    private static final int MAX_PACKET_LENGTH = 255;
+    private static final int BAUDRATE = 115200;
 
-    private SerialPortSetting setting;
+    private final Hashtable<String, CommPortIdentifier> ports = new Hashtable<>();
 
     private ConnectionStatusType status = CLOSED;
 
@@ -34,9 +37,8 @@ public class SerialPortConnection implements Connection, SerialPortEventListener
     private OutputStream output = null;
 
 
-    public SerialPortConnection(SerialPortSetting setting)
+    public SerialPortConnection()
     {
-        this.setting = setting;
 
         Enumeration portsEnum = CommPortIdentifier.getPortIdentifiers();
 
@@ -49,20 +51,9 @@ public class SerialPortConnection implements Connection, SerialPortEventListener
     }
 
     @Override
-    public void stablishConnection()
+    public void stablishConnection() throws ConnectException
     {
-        try {
-            if (setting == null | setting.getComPort() == null) {
-                status = CONNECTION_FAILED;
-
-                throw new ConnectException("setting is null or SerialPort name is not specified");
-            }
-
-            commPortIdentifier = findSerialPort(setting.getComPort());
-
-        }catch (ConnectException e) {
-            e.printStackTrace();
-        }
+        commPortIdentifier = findSerialPort(COM_PORT);
     }
 
     private CommPortIdentifier findSerialPort(String comPort) throws ConnectException
@@ -79,9 +70,9 @@ public class SerialPortConnection implements Connection, SerialPortEventListener
     }
 
     @Override
-    public void open()
+    public void open() throws ConnectException
     {
-        status=CONNECTING;
+        status = CONNECTING;
 
         final CommPort commPort;
         SerialPort serialPort = null;
@@ -91,24 +82,22 @@ public class SerialPortConnection implements Connection, SerialPortEventListener
             //the CommPort object can be casted to a SerialPort object
             serialPort = (SerialPort) commPort;
 
-            serialPort.setSerialPortParams(setting.getBaudrate(),
+            serialPort.setSerialPortParams(BAUDRATE,
                                            SerialPort.DATABITS_8,
                                            SerialPort.STOPBITS_1,
                                            SerialPort.PARITY_NONE);
 
 
-        }catch (PortInUseException e) {
-//            Log.main().error("Port in use. Make sure there is no other app using this com port.");
-            e.printStackTrace();
         }catch (Exception e) {
             e.printStackTrace();
+            throw new ConnectException("Can not open the connection");
         }
 
         if (serialPort != null) {
             this.serialPort = serialPort;
             initEventListenersAndIO();
         }else
-            throw new NullPointerException();
+            throw new ConnectException("Can not open the connection");
     }
 
     @Override
@@ -124,7 +113,7 @@ public class SerialPortConnection implements Connection, SerialPortEventListener
             e.printStackTrace();
         }
 
-        status=CLOSED;
+        status = CLOSED;
     }
 
     @Override
@@ -155,10 +144,9 @@ public class SerialPortConnection implements Connection, SerialPortEventListener
     {
         if (serialPortEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
             try {
-                Integer maxPacketLength = setting.getMaxPacketLength();
-                final byte[] buff = new byte[maxPacketLength];
-                final int length = input.read(buff, 0, maxPacketLength);
-                ArrayList<Integer> intBuff = new ArrayList<>(maxPacketLength);
+                final byte[] buff = new byte[MAX_PACKET_LENGTH];
+                final int length = input.read(buff, 0, MAX_PACKET_LENGTH);
+                ArrayList<Integer> intBuff = new ArrayList<>(length);
                 for (int i = 0; i < length; i++) {
                     //convert signed value to unsigned
                     intBuff.add(buff[i] & 0xFF);
