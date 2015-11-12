@@ -2,16 +2,7 @@ package artronics.chaparMini.events;
 
 import com.google.common.eventbus.EventBus;
 
-public class Event
+public interface Event
 {
-    private static final EventBus MAIN_BUS = new EventBus();
-
-    protected Event()
-    {
-    }
-
-    public static EventBus mainBus()
-    {
-        return MAIN_BUS;
-    }
+    EventBus CHAPAR_BUS = new EventBus();
 }
