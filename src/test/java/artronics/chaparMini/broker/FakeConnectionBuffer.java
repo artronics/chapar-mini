@@ -1,6 +1,5 @@
 package artronics.chaparMini.broker;
 
-import artronics.chapar.FakePacketFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,8 +7,8 @@ import java.util.List;
 
 public class FakeConnectionBuffer
 {
-    private static final int START_BYTE = FakePacketFactory.START_BYTE;
-    private static final int STOP_BYTE = FakePacketFactory.STOP_BYTE;
+    private static final int START_BYTE = 122;
+    private static final int STOP_BYTE = 126;
 
     private List<Integer> firstOne;
     private List<Integer> secondOne;
