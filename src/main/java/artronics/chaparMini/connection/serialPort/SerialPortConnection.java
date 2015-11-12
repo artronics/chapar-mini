@@ -1,25 +1,27 @@
 package artronics.chaparMini.connection.serialPort;
 
 
+import artronics.chaparMini.broker.MessageToPacketConvertor;
 import artronics.chaparMini.connection.Connection;
 import artronics.chaparMini.connection.ConnectionStatusType;
 import artronics.chaparMini.events.Event;
 import artronics.chaparMini.events.MessageReceivedEvent;
+import artronics.chaparMini.events.TransmitMessageEvent;
+import com.google.common.eventbus.Subscribe;
 import gnu.io.*;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ConnectException;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.TooManyListenersException;
+import java.util.*;
 
 import static artronics.chaparMini.connection.ConnectionStatusType.*;
 
 public class SerialPortConnection implements Connection, SerialPortEventListener
 {
+    private final static int START_BYTE = MessageToPacketConvertor.START_BYTE;
+    private final static int STOP_BYTE = MessageToPacketConvertor.STOP_BYTE;
     private static final String COM_PORT = "/dev/tty.usbserial-AH00WG8Y";
     private static final int MAX_PACKET_LENGTH = 255;
     private static final int BAUDRATE = 115200;
@@ -47,7 +49,7 @@ public class SerialPortConnection implements Connection, SerialPortEventListener
             this.ports.put(port.getName(), port);
         }
 
-        Event.mainBus().register(this);
+        Event.CHAPAR_BUS.register(this);
     }
 
     @Override
@@ -60,7 +62,7 @@ public class SerialPortConnection implements Connection, SerialPortEventListener
     {
         CommPortIdentifier sinkPort = null;
         if (this.ports.containsKey(comPort)) {
-            sinkPort = (CommPortIdentifier) this.ports.get(comPort);
+            sinkPort = this.ports.get(comPort);
 
             return sinkPort;
         }else {
@@ -153,13 +155,28 @@ public class SerialPortConnection implements Connection, SerialPortEventListener
                 }
 
                 MessageReceivedEvent event = new MessageReceivedEvent(intBuff);
-                Event.mainBus().post(event);
+                Event.CHAPAR_BUS.post(event);
 
             }catch (IOException e) {
                 e.printStackTrace();
             }
         }
+    }
 
+    @Subscribe
+    public void transmitMessageHandler(TransmitMessageEvent event)
+    {
+        List<Integer> msg = event.getPacket();
+        msg.add(0, START_BYTE);
+        msg.add(STOP_BYTE);
+
+        try {
+            for (int i = 0; i < msg.size(); i++) {
+                output.write(msg.get(i));
+            }
+        }catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

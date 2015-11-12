@@ -1,5 +1,7 @@
 package artronics.chaparMini;
 
+import artronics.chaparMini.broker.MessageToPacketConvertor;
+import artronics.chaparMini.broker.MessageToPacketConvertorImpl;
 import artronics.chaparMini.connection.Connection;
 import artronics.chaparMini.connection.serialPort.SerialPortConnection;
 import artronics.chaparMini.events.Event;
@@ -17,6 +19,8 @@ public class Chapar implements Runnable
     private final LinkedList<List<Integer>> transmitBuffer;
 
     private Connection serialConnection;
+
+    private MessageToPacketConvertor convertor = new MessageToPacketConvertorImpl();
 
     public Chapar(LinkedList<List<Integer>> receivedBuffer,
                   LinkedList<List<Integer>> transmitBuffer)
@@ -44,12 +48,18 @@ public class Chapar implements Runnable
     @Subscribe
     public void recievePacketHandler(MessageReceivedEvent event)
     {
-        receivedBuffer.add(event.getPacket());
+        List<List<Integer>> messages = convertor.generatePackets(event.getPacket());
+
+        for (List<Integer> msg : messages) {
+            receivedBuffer.add(msg);
+        }
     }
 
     @Override
     public void run()
     {
-
+        while (!transmitBuffer.isEmpty()) {
+            Event.CHAPAR_BUS.post(transmitBuffer.peekLast());
+        }
     }
 }
