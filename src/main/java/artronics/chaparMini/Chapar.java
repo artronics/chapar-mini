@@ -15,21 +15,15 @@ import java.util.List;
 
 public class Chapar implements Runnable
 {
-    private final LinkedList<List<Integer>> receivedBuffer;
-    private final LinkedList<List<Integer>> transmitBuffer;
+    private final LinkedList<List<Integer>> receivedBuffer = new LinkedList<>();
+    private final LinkedList<List<Integer>> transmitBuffer = new LinkedList<>();
 
-    private Connection serialConnection;
+    private final Connection serialConnection = new SerialPortConnection();
 
     private MessageToPacketConvertor convertor = new MessageToPacketConvertorImpl();
 
-    public Chapar(LinkedList<List<Integer>> receivedBuffer,
-                  LinkedList<List<Integer>> transmitBuffer)
+    public Chapar()
     {
-        this.receivedBuffer = receivedBuffer;
-        this.transmitBuffer = transmitBuffer;
-
-        this.serialConnection = new SerialPortConnection();
-
         Event.CHAPAR_BUS.register(this);
     }
 
@@ -66,9 +60,18 @@ public class Chapar implements Runnable
             Event.CHAPAR_BUS.post(transmitBuffer.peekLast());
         }
     }
-
     public void stop()
     {
-
     }
+
+    public LinkedList<List<Integer>> getReceivedBuffer()
+    {
+        return receivedBuffer;
+    }
+
+    public LinkedList<List<Integer>> getTransmitBuffer()
+    {
+        return transmitBuffer;
+    }
+
 }
