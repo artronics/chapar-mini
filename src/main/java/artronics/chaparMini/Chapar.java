@@ -60,6 +60,7 @@ public class Chapar implements Runnable
             Event.CHAPAR_BUS.post(transmitBuffer.peekLast());
         }
     }
+
     public void stop()
     {
     }
@@ -73,5 +74,4 @@ public class Chapar implements Runnable
     {
         return transmitBuffer;
     }
-
 }
