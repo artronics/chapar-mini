@@ -10,20 +10,24 @@ import artronics.chaparMini.exceptions.ChaparConnectionException;
 import com.google.common.eventbus.Subscribe;
 
 import java.net.ConnectException;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 
 public class Chapar implements Runnable
 {
-    private final LinkedList<List<Integer>> receivedBuffer = new LinkedList<>();
-    private final LinkedList<List<Integer>> transmitBuffer = new LinkedList<>();
+    private final BlockingQueue<List<Integer>> rxMessages;
+
+    private final BlockingQueue<List<Integer>> txMessages;
 
     private final Connection serialConnection = new SerialPortConnection();
 
     private MessageToPacketConvertor convertor = new MessageToPacketConvertorImpl();
 
-    public Chapar()
+    public Chapar(BlockingQueue<List<Integer>> rxMessage, BlockingQueue<List<Integer>> txMessage)
     {
+        this.rxMessages = rxMessage;
+        this.txMessages = txMessage;
+
         Event.CHAPAR_BUS.register(this);
     }
 
@@ -35,7 +39,7 @@ public class Chapar implements Runnable
 
         }catch (ConnectException e) {
             e.printStackTrace();
-            throw new ChaparConnectionException("Can not connect to device",e);
+            throw new ChaparConnectionException("Can not connect to device", e);
         }
     }
 
@@ -45,7 +49,7 @@ public class Chapar implements Runnable
         List<List<Integer>> messages = convertor.generatePackets(event.getPacket());
 
         for (List<Integer> msg : messages) {
-            receivedBuffer.add(msg);
+            rxMessages.add(msg);
             for (Integer byt : msg) {
                 System.out.print(byt + " ");
             }
@@ -56,22 +60,19 @@ public class Chapar implements Runnable
     @Override
     public void run()
     {
-        while (!transmitBuffer.isEmpty()) {
-            Event.CHAPAR_BUS.post(transmitBuffer.peekLast());
+        try {
+            while (true) {
+                while (!txMessages.isEmpty()) {
+                    Event.CHAPAR_BUS.post(txMessages.take());
+                }
+            }
+
+        }catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
     public void stop()
     {
-    }
-
-    public LinkedList<List<Integer>> getReceivedBuffer()
-    {
-        return receivedBuffer;
-    }
-
-    public LinkedList<List<Integer>> getTransmitBuffer()
-    {
-        return transmitBuffer;
     }
 }
