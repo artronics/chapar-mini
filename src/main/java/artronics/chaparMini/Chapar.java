@@ -6,28 +6,31 @@ import artronics.chaparMini.connection.Connection;
 import artronics.chaparMini.connection.serialPort.SerialPortConnection;
 import artronics.chaparMini.events.Event;
 import artronics.chaparMini.events.MessageReceivedEvent;
+import artronics.chaparMini.events.TransmitMessageEvent;
 import artronics.chaparMini.exceptions.ChaparConnectionException;
 import com.google.common.eventbus.Subscribe;
 
 import java.net.ConnectException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
-public class Chapar implements Runnable
+public class Chapar
 {
-    private final BlockingQueue<List<Integer>> rxMessages;
+    private final static List<Integer> POISON_PILL = new ArrayList<>();
 
-    private final BlockingQueue<List<Integer>> txMessages;
+    private final BlockingQueue<List<Integer>> rxMessages = new LinkedBlockingQueue<>();
+
+    private final BlockingQueue<List<Integer>> txMessages = new LinkedBlockingQueue<>();
 
     private final Connection serialConnection = new SerialPortConnection();
 
     private MessageToPacketConvertor convertor = new MessageToPacketConvertorImpl();
 
-    public Chapar(BlockingQueue<List<Integer>> rxMessage, BlockingQueue<List<Integer>> txMessage)
-    {
-        this.rxMessages = rxMessage;
-        this.txMessages = txMessage;
 
+    public Chapar()
+    {
         Event.CHAPAR_BUS.register(this);
     }
 
@@ -41,6 +44,55 @@ public class Chapar implements Runnable
             e.printStackTrace();
             throw new ChaparConnectionException("Can not connect to device", e);
         }
+    }
+
+    public void start()
+    {
+
+        Thread chaparThr = new Thread(
+                new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        while (true) {
+                            try {
+
+                                List<Integer> msg = txMessages.take();
+
+                                if (msg == POISON_PILL) {
+                                    closeConnection();
+                                    break;
+                                }
+
+                                TransmitMessageEvent event = new TransmitMessageEvent(msg);
+                                Event.CHAPAR_BUS.post(event);
+
+                            }catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }
+
+                , "Chapar"); //Thread name
+
+        chaparThr.start();
+    }
+
+    private void closeConnection()
+    {
+        serialConnection.close();
+    }
+
+    public BlockingQueue<List<Integer>> getRxMessages()
+    {
+        return rxMessages;
+    }
+
+    public BlockingQueue<List<Integer>> getTxMessages()
+    {
+        return txMessages;
     }
 
     @Subscribe
@@ -57,22 +109,8 @@ public class Chapar implements Runnable
         }
     }
 
-    @Override
-    public void run()
-    {
-        try {
-            while (true) {
-                while (!txMessages.isEmpty()) {
-                    Event.CHAPAR_BUS.post(txMessages.take());
-                }
-            }
-
-        }catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
     public void stop()
     {
+        txMessages.add(POISON_PILL);
     }
 }
