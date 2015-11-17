@@ -102,10 +102,6 @@ public class Chapar
 
         for (List<Integer> msg : messages) {
             rxMessages.add(msg);
-            for (Integer byt : msg) {
-                System.out.print(byt + " ");
-            }
-            System.out.println();
         }
     }
 
