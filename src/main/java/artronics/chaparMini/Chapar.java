@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class Chapar
+public class Chapar implements DeviceConnection
 {
     private final static List<Integer> POISON_PILL = new ArrayList<>();
 
@@ -34,6 +34,7 @@ public class Chapar
         Event.CHAPAR_BUS.register(this);
     }
 
+    @Override
     public void connect() throws ChaparConnectionException
     {
         try {
@@ -46,6 +47,7 @@ public class Chapar
         }
     }
 
+    @Override
     public void start()
     {
 
