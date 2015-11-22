@@ -20,9 +20,9 @@ public class Chapar implements DeviceConnection
 {
     private final static List<Integer> POISON_PILL = new ArrayList<>();
 
-    private final BlockingQueue<List<Integer>> rxMessages = new LinkedBlockingQueue<>();
+    private final BlockingQueue<List<Integer>> rxQueue = new LinkedBlockingQueue<>();
 
-    private final BlockingQueue<List<Integer>> txMessages = new LinkedBlockingQueue<>();
+    private final BlockingQueue<List<Integer>> txQueue = new LinkedBlockingQueue<>();
 
     private final Connection serialConnection = new SerialPortConnection();
 
@@ -60,7 +60,7 @@ public class Chapar implements DeviceConnection
                         while (true) {
                             try {
 
-                                List<Integer> msg = txMessages.take();
+                                List<Integer> msg = txQueue.take();
 
                                 if (msg == POISON_PILL) {
                                     closeConnection();
@@ -87,14 +87,16 @@ public class Chapar implements DeviceConnection
         serialConnection.close();
     }
 
-    public BlockingQueue<List<Integer>> getRxMessages()
+    @Override
+    public BlockingQueue<List<Integer>> getRxQueue()
     {
-        return rxMessages;
+        return rxQueue;
     }
 
-    public BlockingQueue<List<Integer>> getTxMessages()
+    @Override
+    public BlockingQueue<List<Integer>> getTxQueue()
     {
-        return txMessages;
+        return txQueue;
     }
 
     @Subscribe
@@ -103,12 +105,13 @@ public class Chapar implements DeviceConnection
         List<List<Integer>> messages = convertor.generatePackets(event.getPacket());
 
         for (List<Integer> msg : messages) {
-            rxMessages.add(msg);
+            rxQueue.add(msg);
         }
     }
 
+    @Override
     public void stop()
     {
-        txMessages.add(POISON_PILL);
+        txQueue.add(POISON_PILL);
     }
 }
