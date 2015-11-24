@@ -4,11 +4,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 
 public class MessageToPacketConvertorTest
 {
@@ -41,6 +41,14 @@ public class MessageToPacketConvertorTest
     public void setUp() throws Exception
     {
 
+    }
+
+    @Test
+    public void it_should_return_empty_list_if_there_is_no_packet_ready(){
+        act = convertor.generatePackets(Arrays.asList(122,12,22));
+
+        assertNotNull(act);
+        assertThat(act.size(),equalTo(0));
     }
 
     @Test

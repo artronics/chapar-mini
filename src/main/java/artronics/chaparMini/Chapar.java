@@ -3,12 +3,7 @@ package artronics.chaparMini;
 import artronics.chaparMini.broker.MessageToPacketConvertor;
 import artronics.chaparMini.broker.MessageToPacketConvertorImpl;
 import artronics.chaparMini.connection.Connection;
-import artronics.chaparMini.connection.serialPort.SerialPortConnection;
-import artronics.chaparMini.events.Event;
-import artronics.chaparMini.events.MessageReceivedEvent;
-import artronics.chaparMini.events.TransmitMessageEvent;
 import artronics.chaparMini.exceptions.ChaparConnectionException;
-import com.google.common.eventbus.Subscribe;
 
 import java.net.ConnectException;
 import java.util.ArrayList;
@@ -18,28 +13,90 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class Chapar implements DeviceConnection
 {
+    private final static int START_BYTE = MessageToPacketConvertor.START_BYTE;
+    private final static int STOP_BYTE = MessageToPacketConvertor.STOP_BYTE;
+
     private final static List<Integer> POISON_PILL = new ArrayList<>();
 
     private final BlockingQueue<List<Integer>> rxQueue = new LinkedBlockingQueue<>();
-
     private final BlockingQueue<List<Integer>> txQueue = new LinkedBlockingQueue<>();
 
-    private final Connection serialConnection = new SerialPortConnection();
+    private final BlockingQueue<List<Integer>> deviceRxQueue;
+    private final BlockingQueue<List<Integer>> deviceTxQueue;
 
-    private MessageToPacketConvertor convertor = new MessageToPacketConvertorImpl();
-
-
-    public Chapar()
+    private final Connection connection;
+    private final Runnable txListener = new Runnable()
     {
-        Event.CHAPAR_BUS.register(this);
+        @Override
+        public void run()
+        {
+            while (true) {
+                try {
+
+                    List<Integer> msg = new ArrayList<>(txQueue.take());
+
+                    if (msg == POISON_PILL) {
+                        closeConnection();
+                        break;
+                    }
+
+                    msg.add(0, START_BYTE);
+                    msg.add(STOP_BYTE);
+
+                    deviceTxQueue.add(msg);
+
+                    for (int data : msg)
+                        System.out.print(data + " ,");
+                    System.out.println();
+
+                }catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    };
+    private MessageToPacketConvertor convertor = new MessageToPacketConvertorImpl();
+    private final Runnable rxListener = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            try {
+                while (true) {
+                    List<Integer> msg = deviceRxQueue.take();
+                    if (msg == POISON_PILL) {
+                        closeConnection();
+                        break;
+                    }
+                    List<List<Integer>> messages = convertor.generatePackets(msg);
+
+                    for (List<Integer> msgI : messages) {
+                        rxQueue.add(msgI);
+                        for (int data : msgI)
+                            System.out.print(data + " ,");
+                        System.out.println();
+                    }
+                }
+            }catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+        }
+    };
+
+    public Chapar(Connection connection)
+    {
+        this.connection = connection;
+        this.deviceRxQueue = connection.getDeviceRx();
+        this.deviceTxQueue = connection.getDeviceTx();
     }
 
     @Override
     public void connect() throws ChaparConnectionException
     {
         try {
-            serialConnection.stablishConnection();
-            serialConnection.open();
+            connection.establishConnection();
+            connection.open();
 
         }catch (ConnectException e) {
             e.printStackTrace();
@@ -50,41 +107,15 @@ public class Chapar implements DeviceConnection
     @Override
     public void start()
     {
-
-        Thread chaparThr = new Thread(
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        while (true) {
-                            try {
-
-                                List<Integer> msg = txQueue.take();
-
-                                if (msg == POISON_PILL) {
-                                    closeConnection();
-                                    break;
-                                }
-
-                                TransmitMessageEvent event = new TransmitMessageEvent(msg);
-                                Event.CHAPAR_BUS.post(event);
-
-                            }catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-                }
-
-                , "Chapar"); //Thread name
-
-        chaparThr.start();
+        Thread chaparRxThr = new Thread(txListener, "ChaparTx");
+        Thread chaparTxThr = new Thread(rxListener, "ChaparRx");
+        chaparRxThr.start();
+        chaparTxThr.start();
     }
 
     private void closeConnection()
     {
-        serialConnection.close();
+        connection.close();
     }
 
     @Override
@@ -97,16 +128,6 @@ public class Chapar implements DeviceConnection
     public BlockingQueue<List<Integer>> getTxQueue()
     {
         return txQueue;
-    }
-
-    @Subscribe
-    public void recievePacketHandler(MessageReceivedEvent event)
-    {
-        List<List<Integer>> messages = convertor.generatePackets(event.getPacket());
-
-        for (List<Integer> msg : messages) {
-            rxQueue.add(msg);
-        }
     }
 
     @Override
