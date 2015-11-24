@@ -44,7 +44,7 @@ public class SerialPortConnection implements Connection
         {
             try {
                 while (true) {
-                    List<Integer> msg = deviceTx.take();
+                    final List<Integer> msg = deviceTx.take();
 
                     if (msg == POISON_PILL) {
                         break;

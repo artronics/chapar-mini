@@ -30,7 +30,7 @@ public class SerialRxEvent implements SerialPortEventListener
             try {
                 final byte[] buff = new byte[MAX_PACKET_LENGTH];
                 final int length = input.read(buff, 0, MAX_PACKET_LENGTH);
-                ArrayList<Integer> intBuff = new ArrayList<>(length);
+                final ArrayList<Integer> intBuff = new ArrayList<>(length);
                 for (int i = 0; i < length; i++) {
                     //convert signed value to unsigned
                     intBuff.add(buff[i] & 0xFF);
