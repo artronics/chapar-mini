@@ -30,12 +30,13 @@ public class SerialPortConnection implements Connection
     private final BlockingQueue<List<Integer>> deviceTx = new LinkedBlockingQueue<>();
 
     private final Hashtable<String, CommPortIdentifier> ports = new Hashtable<>();
-    private final SerialPortEventListener serialPortEventListener;
     private ConnectionStatusType status = CLOSED;
+
     private CommPortIdentifier commPortIdentifier;
     private SerialPort serialPort;
-    private InputStream input;
-    private OutputStream output;
+
+    private InputStream input = null;
+    private OutputStream output = null;
     private final Runnable transmitter = new Runnable()
     {
         @Override
@@ -61,14 +62,24 @@ public class SerialPortConnection implements Connection
             }
         }
     };
+    private SerialPortEventListener serialPortEventListener =
+            new SerialRxEvent(input, deviceRx);
 
-    public SerialPortConnection(InputStream input, OutputStream output,
-                                SerialPortEventListener serialPortEventListener)
+    public SerialPortConnection(InputStream input, OutputStream output)
     {
         this.input = input;
         this.output = output;
-        this.serialPortEventListener = serialPortEventListener;
 
+        getAllPorts();
+    }
+
+    public SerialPortConnection()
+    {
+        getAllPorts();
+    }
+
+    private void getAllPorts()
+    {
         Enumeration portsEnum = CommPortIdentifier.getPortIdentifiers();
 
         while (portsEnum.hasMoreElements()) {
@@ -162,10 +173,10 @@ public class SerialPortConnection implements Connection
     private void initEventListenersAndIO()
     {
         try {
-            serialPort.addEventListener(serialPortEventListener);
-            serialPort.notifyOnDataAvailable(true);
             input = serialPort.getInputStream();
             output = serialPort.getOutputStream();
+            serialPort.addEventListener(new SerialRxEvent(input, deviceRx));
+            serialPort.notifyOnDataAvailable(true);
 
         }catch (TooManyListenersException e) {
             e.printStackTrace();

@@ -13,7 +13,7 @@ public interface DeviceConnection
 
     void stop();
 
-    BlockingQueue<List<Integer>> getTxQueue();
+    BlockingQueue<List<Integer>> getChaparTxQueue();
 
-    BlockingQueue<List<Integer>> getRxQueue();
+    BlockingQueue<List<Integer>> getChaparRxQueue();
 }
