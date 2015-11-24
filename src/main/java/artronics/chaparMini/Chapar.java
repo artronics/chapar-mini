@@ -120,8 +120,8 @@ public class Chapar implements DeviceConnection
     @Override
     public void start()
     {
-        Thread chaparRxThr = new Thread(txListener, "ChaparTx");
-        Thread chaparTxThr = new Thread(rxListener, "ChaparRx");
+        Thread chaparRxThr = new Thread(txListener, "Chapar TX");
+        Thread chaparTxThr = new Thread(rxListener, "Chapar RX");
         chaparRxThr.start();
         chaparTxThr.start();
     }
