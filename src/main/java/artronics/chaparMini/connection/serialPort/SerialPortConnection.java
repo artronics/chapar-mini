@@ -22,14 +22,11 @@ import static artronics.chaparMini.connection.ConnectionStatusType.*;
 public class SerialPortConnection implements Connection
 {
     private final static List<Integer> POISON_PILL = new ArrayList<>();
-
-    private static final String COM_PORT = "/dev/tty.usbserial-AH00WG8Y";
     private static final int BAUDRATE = 115200;
-
     private final BlockingQueue<List<Integer>> deviceRx = new LinkedBlockingQueue<>();
     private final BlockingQueue<List<Integer>> deviceTx = new LinkedBlockingQueue<>();
-
     private final Hashtable<String, CommPortIdentifier> ports = new Hashtable<>();
+    private String connectionString;
     private ConnectionStatusType status = CLOSED;
 
     private CommPortIdentifier commPortIdentifier;
@@ -89,9 +86,9 @@ public class SerialPortConnection implements Connection
     }
 
     @Override
-    public void establishConnection() throws ConnectException
+    public void establishConnection(String connectionString) throws ConnectException
     {
-        commPortIdentifier = findSerialPort(COM_PORT);
+        commPortIdentifier = findSerialPort(connectionString);
     }
 
     private CommPortIdentifier findSerialPort(String comPort) throws ConnectException

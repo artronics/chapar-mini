@@ -5,6 +5,7 @@ import artronics.chaparMini.broker.MessageToPacketConvertorImpl;
 import artronics.chaparMini.connection.Connection;
 import artronics.chaparMini.connection.serialPort.SerialPortConnection;
 import artronics.chaparMini.exceptions.ChaparConnectionException;
+import org.apache.log4j.Logger;
 
 import java.net.ConnectException;
 import java.util.ArrayList;
@@ -14,13 +15,19 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class Chapar implements DeviceConnection
 {
+    private final static Logger log = Logger.getLogger(DeviceConnection.class);
+
     private final static int START_BYTE = MessageToPacketConvertor.START_BYTE;
     private final static int STOP_BYTE = MessageToPacketConvertor.STOP_BYTE;
     private final static List<Integer> POISON_PILL = new ArrayList<>();
+
     private final BlockingQueue<List<Integer>> chaparRxQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<List<Integer>> chaparTxQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<List<Integer>> deviceRxQueue;
     private final BlockingQueue<List<Integer>> deviceTxQueue;
+
+    private final DeviceConnectionConfig connectionConfig;
+
     private final Connection connection;
     private PacketLogger packetLogger;
     private final Runnable txListener = new Runnable()
@@ -38,7 +45,7 @@ public class Chapar implements DeviceConnection
                     }
 
                     if (packetLogger != null) {
-                        Log.CHAPAR.debug(packetLogger.logPacket(msg));
+                        log.debug(packetLogger.logPacket(msg));
                     }
 
                     msg.add(0, START_BYTE);
@@ -71,7 +78,7 @@ public class Chapar implements DeviceConnection
 
                     for (final List<Integer> msgI : messages) {
                         if (packetLogger != null) {
-                            Log.CHAPAR.debug(packetLogger.logPacket(msgI));
+                            log.debug(packetLogger.logPacket(msgI));
                         }
 
                         chaparRxQueue.add(msgI);
@@ -83,36 +90,53 @@ public class Chapar implements DeviceConnection
         }
     };
 
-    public Chapar(Connection connection)
+    public Chapar(Connection connection,
+                  DeviceConnectionConfig connectionConfig,
+                  PacketLogger packetLogger
+                  )
     {
         this.connection = connection;
         this.deviceRxQueue = connection.getDeviceRx();
         this.deviceTxQueue = connection.getDeviceTx();
-    }
 
-    public Chapar(PacketLogger packetLogger)
-    {
-        this();
+        this.connectionConfig = connectionConfig;
+
         this.packetLogger = packetLogger;
     }
 
-    public Chapar()
+    public Chapar(DeviceConnectionConfig connectionConfig)
     {
+        this.connectionConfig = connectionConfig;
+
         this.connection = new SerialPortConnection();
+
         this.deviceRxQueue = connection.getDeviceRx();
         this.deviceTxQueue = connection.getDeviceTx();
+
+        this.packetLogger = new ChaparPacketLogger();
     }
 
     @Override
     public void connect() throws ChaparConnectionException
     {
+        String connectionString = connectionConfig.getConnectionString();
+
+        if (connectionString == null) {
+            throw new ChaparConnectionException("ConnectionString is null");
+        }
+
         try {
-            connection.establishConnection();
+            log.debug("Try to connect to device with ConnectionString: "+connectionString);
+            connection.establishConnection(connectionString);
             connection.open();
             connection.start();
 
         }catch (ConnectException e) {
             e.printStackTrace();
+            log.fatal("stop device");
+            log.debug("List of available com ports:");
+            for (String con:connection.getConnections().keySet())
+                log.debug(con);
             throw new ChaparConnectionException("Can not connect to device", e);
         }
     }

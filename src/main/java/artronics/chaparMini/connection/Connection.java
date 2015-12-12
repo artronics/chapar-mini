@@ -9,7 +9,7 @@ public interface Connection
 {
     int TIMEOUT = 2000;
 
-    void establishConnection() throws ConnectException;
+    void establishConnection(String connectionString) throws ConnectException;
 
     void open() throws ConnectException;
 

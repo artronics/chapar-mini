@@ -10,7 +10,7 @@
         </layout>
     </appender>
 
-    <logger name="chapar">
+    <logger name="artronics.chaparMini">
         <level value="debug"/>
         <appender-ref ref="console"></appender-ref>
     </logger>

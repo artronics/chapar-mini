@@ -103,6 +103,16 @@ public class FakeSdwnMsgFactory
     {
         return createRawDataPacket(src, dst, 10);
     }
+    public List<Integer> createRawDataPacket(int src, int dst, List<Integer> payload)
+    {
+        List<Integer> header = createHeader(10 + payload.size(),
+                                            SdwnPacketType.DATA, src, dst);
+
+        List<Integer> packet = new ArrayList<>(header);
+        packet.addAll(payload);
+
+        return new ArrayList<>(packet);
+    }
 
     public List<Integer> createRawDataPacket(int src, int dst, int payloadLen)
     {

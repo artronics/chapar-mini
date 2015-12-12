@@ -2,6 +2,7 @@ package artronics.chaparMini.connection.serialPort;
 
 import gnu.io.SerialPortEvent;
 import gnu.io.SerialPortEventListener;
+import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,6 +12,7 @@ import java.util.concurrent.BlockingQueue;
 
 public class SerialRxEvent implements SerialPortEventListener
 {
+    private static final Logger log = Logger.getLogger(SerialRxEvent.class) ;
     private static final int MAX_PACKET_LENGTH = 255;
 
     private final InputStream input;

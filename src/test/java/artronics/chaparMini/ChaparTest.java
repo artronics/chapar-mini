@@ -23,6 +23,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
 
 public class ChaparTest
 {
@@ -59,7 +60,9 @@ public class ChaparTest
     {
         MockitoAnnotations.initMocks(this);
 
-        chapar = new Chapar(portConn);
+
+        DeviceConnectionConfig config = new DeviceConnectionConfig("someString");
+        chapar = new Chapar(portConn,config,new MockPacketLogger());
 
         chaparRx = chapar.getChaparRxQueue();
         chaparTx = chapar.getChaparTxQueue();
@@ -68,7 +71,7 @@ public class ChaparTest
         deviceTx = portConn.getDeviceTx();
 
         Mockito.doNothing().when(portConn).open();
-        Mockito.doNothing().when(portConn).establishConnection();
+        Mockito.doNothing().when(portConn).establishConnection(any(String.class));
 
         chapar.connect();
         chapar.start();
@@ -204,7 +207,7 @@ class MockConnection implements Connection
     }
 
     @Override
-    public void establishConnection() throws ConnectException
+    public void establishConnection(String connectionString) throws ConnectException
     {
 
     }

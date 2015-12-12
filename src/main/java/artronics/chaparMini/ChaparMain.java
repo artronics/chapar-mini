@@ -4,6 +4,7 @@ import artronics.chaparMini.connection.Connection;
 import artronics.chaparMini.connection.serialPort.SerialPortConnection;
 import artronics.chaparMini.exceptions.ChaparConnectionException;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -12,8 +13,9 @@ public class ChaparMain
 {
     public static void main(String[] args) throws InterruptedException, ChaparConnectionException
     {
+        DeviceConnectionConfig config = new DeviceConnectionConfig("/dev/tty.usbserial-AH00WG8Y");
         Connection connection = new SerialPortConnection();
-        DeviceConnection chapar = new Chapar(connection);
+        DeviceConnection chapar = new Chapar(connection,config,new ChaparPacketLogger());
         BlockingQueue rx = chapar.getChaparRxQueue();
         BlockingQueue tx = chapar.getChaparTxQueue();
         chapar.connect();
@@ -30,12 +32,18 @@ public class ChaparMain
         tx.add(opPck);
         Thread.sleep(1000);
 
+        List<Integer> payload = Arrays.asList(0,1,2,3,4,5,6,7,8,9);
+        int counter=0;
         for (int i = 0; i < 1000; i++) {
-            List<Integer> dataPacket = factory.createRawDataPacket(0, 30, 10);
-            tx.add(dataPck);
+            payload.set(9,counter++);
+            if (counter == 255)
+                counter=0;
+
+            List<Integer> dataPacket = factory.createRawDataPacket(0, 30, payload);
+            List<Integer> packet = new ArrayList<>(dataPacket);
+            tx.add(packet);
             dataPacket.clear();
             Thread.sleep(2000);
-
         }
     }
 }
